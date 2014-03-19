@@ -14,6 +14,12 @@ typedef struct _regex_t_and_array {
 	GPtrArray* array;
 }regex_t_and_array;
 
+typedef struct _STOCKINFO {
+	char* symbol;
+	char* code;
+	bool IsActivated;
+} STOCKINFO;
+
 typedef	struct _TreeElement {
 	int id;
 	bool IsActivated;

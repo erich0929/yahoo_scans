@@ -1,4 +1,4 @@
-all : stockapi/stockapi.o boardwidget/boardwidget.o yahoo_scans.o
+all : stockapi/stockapi.o boardwidget/boardwidget.o treeapi/treeapi.o yahoo_scans.o
 	gcc -o yahoo_scans $^ -lform -lncurses -lcurl `pkg-config --cflags --libs glib-2.0`
 
 stockapi/stockapi.o :
@@ -7,11 +7,14 @@ stockapi/stockapi.o :
 boardwidget/boardwidget.o :
 	cd boardwidget && make
 
+treeapi/treeapi.o :
+	cd treeapi && make
+
 yahoo_scans.o : yahoo_scans.c
-	gcc -c -o $@ $^
+	gcc -c -o $@ $^ `pkg-config --cflags glib-2.0`
 
 clean :
 	rm -rf *.o yahoo_scans
 	cd stockapi && make clean
 	cd boardwidget && make clean
-
+	cd treeapi && make clean
