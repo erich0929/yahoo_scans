@@ -1,90 +1,85 @@
 #include "treeapi.h"
 
-
-STOCKINFO WORLD = {"World", NULL, true};
-STOCKINFO NYSE = {"NYSE", "55451.ns", true};
-STOCKINFO KOSPI = {"KOSPI", "87221.ks", true};
-
-STOCKINFO table_NYSE [] =	{
-	{"APPL", "45685.ns", false},
-	{"MS", "74584.NS", false},
-	{"LINUX", "75412.NS", false}
-};
-
-STOCKINFO table_KOSPI [] =	{
-	{"SAMSUNG", "54544.ks", false},
-	{"LG", "478851.ks", false}
-};
-
-/*
-TreeElement table [] = 	{
-	{100, true,	(gpointer) &table_stockinfo [0]},
-	{110, false, (gpointer) &table_stockinfo [1]},
-	{120, false, (gpointer) &table_stockinfo [2]},
-	{130, false, (gpointer) &table_stockinfo [3]},
-	{140, false, (gpointer) &table_stockinfo [4]},
-	{0, NULL, NULL}
-};
-*/
-void foreach_func (GNode*, gpointer);
-
-void foreach_func (GNode* node, gpointer data) {
+/* --------- < Used by open_close_branch > ------------- */
+static void activate_node (GNode* node, gpointer data) {
 	STOCKINFO* temp = (STOCKINFO*) node -> data;
-	printf ("%s\n", temp -> symbol);
+	bool flag = *((bool*) data);
+	if (flag == true) {
+		temp -> IsActivated = true;
+	}
+	else temp -> IsActivated = false;
 }
 
-gboolean traverse_func (GNode* node, gpointer data);
-
-gboolean traverse_func (GNode *node, gpointer data) {
-	STOCKINFO* temp = (STOCKINFO*) node -> data;
-	printf ("%s\n", temp -> symbol);
+/* --------- < Used by node_to_array > ----------- */
+static gboolean store_into_g_ptr_array (GNode* node, gpointer g_ptr_array) {
+	STOCKINFO* data = (STOCKINFO*) node -> data;
+	if (data -> IsActivated == true) {
+		GPtrArray* array = (GPtrArray*) g_ptr_array;
+		g_ptr_array_add (g_ptr_array, data);
+	}
 	return false;
 }
 
-int main(void)
-{
-/*
-	GPtrArray* stocklist = array_to_GPtrArray (table, sizeof (table) / sizeof (TreeElement), stocklist);
-	
-	int i = 0;
-	TreeElement* record;
-	for (i=0; i<stocklist -> len; i++) {
-		record = g_ptr_array_index (stocklist, i);
-		printf ("%s\n", ((STOCKINFO*) (record -> data)) -> symbol);
-	}
-		
-	g_ptr_array_free (stocklist, true);
-
-	open_close_branch (table, &table [0], true);
-	stocklist = array_to_GPtrArray (table, sizeof (table) / sizeof (TreeElement), stocklist);
-
-	for (i=0; i<stocklist -> len; i++) {
-		record = g_ptr_array_index (stocklist, i);
-		printf ("%s\n", ((STOCKINFO*) (record -> data)) -> symbol);
-	}
-	
-	g_ptr_array_free (stocklist, true);
-*/
-	GNode* world = g_node_new (&WORLD);
-	GNode* nyse = g_node_new (&NYSE);
-	g_node_insert (world, -1, nyse);
-	int i = 0;
-	for (i = 0; i < sizeof (table_NYSE) / sizeof (STOCKINFO); i ++) {
-		GNode* temp = g_node_new (&table_NYSE [i]);
-		g_node_insert (nyse, -1, temp);
-	}
-	
-	GNode* kospi = g_node_new (&KOSPI);
-	g_node_insert (world, -1, kospi);
-	dump_to_parent (kospi, table_KOSPI, sizeof (table_KOSPI) / sizeof (STOCKINFO));
-
-	open_close_branch (kospi, true);
-	/* g_node_children_foreach (world, G_TRAVERSE_ALL, foreach_func, NULL); */
-	GPtrArray* datatable = search_by_regex (world, "LINUX", datatable);
-	for (i = 0; i < datatable -> len; i++) {
-		STOCKINFO* temp = (STOCKINFO*) g_ptr_array_index (datatable, i);
-		printf ("%s\n", temp -> symbol);
-	}
-
-	return 0;
+static gboolean check_and_store (GNode* node, gpointer data) {
+	STOCKINFO* temp = (STOCKINFO*) node -> data;
+	regex_t_and_array* temp1 = (regex_t_and_array*) data;
+	int status = regexec (&(temp1 -> state), temp -> symbol, 0, NULL, 0);
+	if (status == 0 || g_node_depth (node) <= 2) {
+		g_ptr_array_add (temp1 -> array, temp);
+	}	
+	return false;
 }
+void open_close_branch (GNode* parent, bool flag) {
+	g_node_children_foreach (parent, G_TRAVERSE_ALL, activate_node, &flag);
+}
+
+GPtrArray* node_to_array (GNode* node, GPtrArray* empty_GPtrArray) {
+	empty_GPtrArray = g_ptr_array_new ();
+	GPtrArray* fulled_GPtrArray = empty_GPtrArray;
+	g_node_traverse (node, G_PRE_ORDER, G_TRAVERSE_ALL, -1, store_into_g_ptr_array, (gpointer) fulled_GPtrArray);
+	return fulled_GPtrArray;
+}
+/*
+int next_branch_point (int id) {
+	char stringID [20];
+	sprintf (stringID, "%d", id);
+
+	int length = strlen (stringID);
+	int zero_position = length;
+	char* temp = stringID;
+	for (zero_position; *temp; temp ++, zero_position --) {
+		if (*temp == '0') break;
+	}
+	
+	char* plus = (char*) malloc (zero_position + 2);
+	plus [0] = '1';
+	temp = plus;
+	temp ++;
+	for (; *temp; temp ++) {
+		*temp = '0';
+	}
+	plus [zero_position + 1] = '\0';
+	id += atoi (plus);
+
+	return id;
+}
+*/
+
+void dump_to_parent (GNode* parent, STOCKINFO table [], int length) {
+	int i = 0;
+	for (i = 0; i < length ; i++) {
+		GNode* temp = g_node_new (&table [i]);
+		g_node_insert (parent, -1, temp);
+	}
+}
+
+GPtrArray*  search_by_regex (GNode* node, char* pattern, GPtrArray* empty_GPtrArray) {
+	empty_GPtrArray = g_ptr_array_new ();
+	GPtrArray* fulled_GPtrArray = empty_GPtrArray;
+	regex_t_and_array data;
+	regcomp (&(data.state), pattern, REG_EXTENDED);
+	data.array = fulled_GPtrArray;
+	g_node_traverse (node, G_PRE_ORDER, G_TRAVERSE_ALL, -1, check_and_store, (gpointer) &data);
+	return fulled_GPtrArray;
+}
+
