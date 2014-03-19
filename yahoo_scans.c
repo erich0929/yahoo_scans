@@ -1,10 +1,23 @@
 #include <stdio.h>
 #include <ncurses.h>
-#include <form.h>
+#include <stdlib.h>
 
 #include "./stockapi/stockapi.h"
 #include "./boardwidget/boardwidget.h"
 #include "./treeapi/treeapi.h"
+
+static void print_main_board_header (WINDOW* wnd, int rows);
+static void print_main_board_data (WINDOW* wnd, gpointer data, int rows);
+
+static void print_main_board_header (WINDOW* wnd, int colindex) {
+	wprintw (wnd, "%s", "Select a stock you want to scan.");
+	wrefresh (wnd);
+}
+
+static void print_main_board_data (WINDOW* wnd, gpointer data, int colindex){
+	STOCKINFO* temp = (STOCKINFO*) data;
+	wprintw (wnd, "%s", temp -> symbol);
+}
 
 STOCKINFO WORLD = {"World", NULL, true};
 STOCKINFO NYSE = {"NYSE", NULL, true};
@@ -23,13 +36,8 @@ STOCKINFO KOSPI_LIST [] = 	{
 								{"KIA", "25236.KS", false}
 							};
 
-int main(void)
+int main(int argc, char* argv[])
 {
-	/* initialize the display context */
-	init_scr ();
-	cbreak ();
-	refresh ();
-	
 	/* initialize the stock' informations */
 	GNode* world = g_node_new (&WORLD);
 	
@@ -41,6 +49,30 @@ int main(void)
 	g_node_insert (world, -1, kospi);
 	dump_to_parent (kospi, KOSPI_LIST, sizeof (KOSPI_LIST) / sizeof (STOCKINFO));
 
+	GPtrArray* main_data_table;
+	GPtrArray* result_data_table;
+
+	main_data_table = node_to_array (world, main_data_table);
+
+	/* initialize the display context */
+	init_scr ();
+		
+	POINT_INFO main_board_point_info;
+	main_board_point_info.origin_x = 3;
+	main_board_point_info.origin_y = 3;
+	main_board_point_info.base_color = COLOR_PAIR (0);
+	main_board_point_info.selected_color = COLOR_PAIR (1);
+	main_board_point_info.x_from_origin = 0;
+	main_board_point_info.y_from_origin = 0;
+
+	/* initialize the main_board widget */
+	BOARD_WIDGET* main_board = new_board (main_board, 10, 1, 1, 20,
+										&main_board_point_info, main_data_table,
+										print_main_board_header, 
+								   		print_main_board_data);
+
+	set_rowIndex (main_board, 0);
+	update_board (main_board);
 
 	/* main loop */
 	int ch;
@@ -57,7 +89,7 @@ int main(void)
 							break;
 						case KEY_RIGHT :
 							/* go to next fied */
-				
+			
 							break;
 						default :
 				
@@ -70,7 +102,11 @@ int main(void)
 		usleep (1000);
 	}
 
-	/* un post form and free the memory */
+	/* free the memory */
+	g_ptr_array_free (main_data_table, false);
+	g_node_destroy (world);
+	del_board (main_board);
 	endwin ();
 	return 0;
 }
+

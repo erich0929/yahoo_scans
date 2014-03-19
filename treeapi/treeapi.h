@@ -8,17 +8,20 @@
 #include <stdlib.h>
 #include <regex.h>
 #include <sys/types.h>
+#include "../stockapi/stockapi.h"
 
 typedef struct _regex_t_and_array {
 	regex_t state;
 	GPtrArray* array;
 }regex_t_and_array;
 
+/*
 typedef struct _STOCKINFO {
 	char* symbol;
 	char* code;
 	bool IsActivated;
 } STOCKINFO;
+*/
 
 typedef	struct _TreeElement {
 	int id;

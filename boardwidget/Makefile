@@ -2,7 +2,7 @@ TARGET	= boardwidget.o
 OBJS	= $(wildcard *.c)
 
 all : 
-		gcc -c -o $(TARGET) $(OBJS) `pkg-config --cflags glib-2.0`
+		gcc -g -c -o $(TARGET) $(OBJS) `pkg-config --cflags glib-2.0`
 
-clean :"
+clean :
 		rm -rf *.o $(TARGET)
