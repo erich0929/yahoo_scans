@@ -1,6 +1,5 @@
 #include "boardwidget.h"
 
-
 /*
 typedef struct _POINT_INFO {
 
@@ -286,7 +285,8 @@ void clear_board (BOARD_WIDGET* board) {
 		for (i = 0; i < board -> wndTable -> len; i++) { /* debug : i < row */
 			rowContainer = (WINDOW**) g_ptr_array_index (board -> wndTable, i);
 			for (j = 0; j < board -> col; j++) {
-				werase (rowContainer [j]); /* clear data */
+				werase (rowContainer [j]);
+			   	wrefresh (rowContainer [j]);	/* clear data */
 				/* wmove (rowContainer [j], 0 , 0); */
 				/* wrefresh (rowContainer [j]); */
 			}
@@ -622,10 +622,17 @@ void set_colors (BOARD_WIDGET* board, chtype base_color, chtype selected_color) 
 	refresh ();
 }
 
-void board_eventhandler (BOARD_WIDGET* board) {
+void board_eventhandler (BOARD_WIDGET* board, GNode* root) {
 	
 	int ch;
-	
+	int selected_data_index;
+	STOCKINFO* temp;
+	GNode* temp_node;
+	GNode* market;
+	bool flag;
+	int remember_index;
+	int i;
+
 	activate_board (board);
 
 	while ((ch = getch ()) != 'q') {		
@@ -651,6 +658,46 @@ void board_eventhandler (BOARD_WIDGET* board) {
 				/* clear_board (board); */
 				resize_handler (board);
 				break;
+			
+			case '\n' :
+				selected_data_index = board -> firstrow_index +
+											board -> selected_index;
+				temp = (STOCKINFO*) g_ptr_array_index (
+								board -> dataTable, selected_data_index);
+				if (temp -> depth <= 2) {
+					market = g_node_find (root, G_LEVEL_ORDER, 
+							G_TRAVERSE_NON_LEAVES, (gpointer) temp);
+					temp_node = g_node_first_child (market);
+					flag = ((STOCKINFO*) (temp_node -> data)) -> IsActivated;
+					/* for Debugging */
+					for (i = 0; i < board -> dataTable -> len; i++) {
+						temp = (STOCKINFO*) g_ptr_array_index (board -> dataTable, i);
+					}
+
+					open_close_branch (market, !flag);
+					/* for Debugging */
+					for (i = 0; i < board -> dataTable -> len; i++) {
+						temp = (STOCKINFO*) g_ptr_array_index (board -> dataTable, i);
+					}
+					clear_board (board);
+
+					g_ptr_array_free (board -> dataTable, false);
+					board -> dataTable = node_to_array (root, 
+										board -> dataTable);
+					for (i = 0; i < board -> dataTable -> len; i++) {
+						temp = (STOCKINFO*) g_ptr_array_index (board -> dataTable, i);
+					}
+					
+					remember_index = board -> selected_index;
+					set_rowIndex (board, board -> wndTable -> len);
+					set_rowIndex (board, -1);
+					set_rowIndex (board, remember_index);
+					board -> wndFlag = true;
+					board -> dataFlag = true;
+					update_board (board);
+				}
+				break;
+
 			case 'o' :
 				option_handler (board);
 				break;
