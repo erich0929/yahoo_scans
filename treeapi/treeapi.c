@@ -4,6 +4,9 @@
 static void activate_node (GNode* node, gpointer data) {
 	STOCKINFO* temp = (STOCKINFO*) node -> data;
 	bool flag = *((bool*) data);
+	if (flag == false && g_node_depth (node) == 2) {
+		open_close_branch (node, flag); /* Recursive call */
+	}
 	if (flag == true) {
 		temp -> IsActivated = true;
 	}
@@ -13,42 +16,44 @@ static void activate_node (GNode* node, gpointer data) {
 /* --------- < Used by node_to_array > ----------- */
 static gboolean store_into_g_ptr_array (GNode* node, gpointer g_ptr_array) {
 	STOCKINFO* temp = (STOCKINFO*) node -> data;
-	temp -> format_info = 0x000;
-	/* pipe info */
-	if (g_node_depth (node) == 3) {
-		GNode* root = g_node_get_root (node);
-		GNode* last_market = g_node_last_child (root);
-		GNode* first_sibling = g_node_first_sibling (node);
-		if (first_sibling != g_node_first_child (last_market)) {
-			temp -> format_info = 0x1000;
-		}
-	}
-
-	/* tabchar info */
-	int depth;
-	if ((depth = g_node_depth (node)) > 1) {
-		temp -> format_info += (depth - 1 << 8);
-	}
-	/* arm info */
-	if (g_node_depth (node) > 1) {
-		if (node == g_node_last_sibling (node)) {
-			temp -> format_info += ERICH_ARM2;
-		}
-		else {
-			temp -> format_info += ERICH_ARM1;
-		}
-	}
-	/* sign info */
-	if (!(G_NODE_IS_LEAF (node))) {
-		GNode* first = g_node_first_child (node);
-		STOCKINFO* first_temp = (STOCKINFO*) first -> data;
-		if (first_temp -> IsActivated) {
-			temp -> format_info += ERICH_NAGATIVE;
-		}
-		else temp -> format_info += ERICH_POSITIVE;
-	}
 
 	if (temp -> IsActivated == true) {
+
+		temp -> format_info = 0x000;
+		/* pipe info */
+		if (g_node_depth (node) == 3) {
+			GNode* root = g_node_get_root (node);
+			GNode* last_market = g_node_last_child (root);
+			GNode* first_sibling = g_node_first_sibling (node);
+			if (first_sibling != g_node_first_child (last_market)) {
+				temp -> format_info = 0x1000;
+			}
+		}
+
+		/* tabchar info */
+		int depth;
+		if ((depth = g_node_depth (node)) > 1) {
+			temp -> format_info += (depth - 1 << 8);
+		}
+		/* arm info */
+		if (g_node_depth (node) > 1) {
+			if (node == g_node_last_sibling (node)) {
+				temp -> format_info += ERICH_ARM2;
+			}
+			else {
+				temp -> format_info += ERICH_ARM1;
+			}
+		}
+		/* sign info */
+		if (!(G_NODE_IS_LEAF (node))) {
+			GNode* first = g_node_first_child (node);
+			STOCKINFO* first_temp = (STOCKINFO*) first -> data;
+			if (first_temp -> IsActivated) {
+				temp -> format_info += ERICH_NAGATIVE;
+			}
+			else temp -> format_info += ERICH_POSITIVE;
+		}
+
 		GPtrArray* array = (GPtrArray*) g_ptr_array;
 		g_ptr_array_add (g_ptr_array, temp);
 	}

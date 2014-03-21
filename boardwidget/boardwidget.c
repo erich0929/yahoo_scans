@@ -669,28 +669,18 @@ void board_eventhandler (BOARD_WIDGET* board, GNode* root) {
 							G_TRAVERSE_NON_LEAVES, (gpointer) temp);
 					temp_node = g_node_first_child (market);
 					flag = ((STOCKINFO*) (temp_node -> data)) -> IsActivated;
-					/* for Debugging */
-					for (i = 0; i < board -> dataTable -> len; i++) {
-						temp = (STOCKINFO*) g_ptr_array_index (board -> dataTable, i);
-					}
-
+					
 					open_close_branch (market, !flag);
-					/* for Debugging */
-					for (i = 0; i < board -> dataTable -> len; i++) {
-						temp = (STOCKINFO*) g_ptr_array_index (board -> dataTable, i);
-					}
+					
 					clear_board (board);
 
 					g_ptr_array_free (board -> dataTable, false);
 					board -> dataTable = node_to_array (root, 
 										board -> dataTable);
-					for (i = 0; i < board -> dataTable -> len; i++) {
-						temp = (STOCKINFO*) g_ptr_array_index (board -> dataTable, i);
-					}
 					
 					remember_index = board -> selected_index;
-					set_rowIndex (board, board -> wndTable -> len);
-					set_rowIndex (board, -1);
+					set_rowIndex (board, 0);
+					/*set_rowIndex (board, -1);*/
 					set_rowIndex (board, remember_index);
 					board -> wndFlag = true;
 					board -> dataFlag = true;
