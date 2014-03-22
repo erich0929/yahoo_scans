@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
 
 	/* initialize the display context */
 	init_scr ();
-		
+	cbreak ();
 	POINT_INFO main_board_point_info;
 	main_board_point_info.origin_x = 3;
 	main_board_point_info.origin_y = 3;
@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
 	main_board_point_info.y_from_origin = 0;
 
 	/* initialize the main_board widget */
-	BOARD_WIDGET* main_board = new_board (main_board, 6, 1, 1, 33,
+	BOARD_WIDGET* main_board = new_board (main_board, 20, 1, 1, 33,
 										&main_board_point_info, main_data_table,
 										print_main_board_header, 
 								   		print_main_board_data);
@@ -127,14 +127,60 @@ int main(int argc, char* argv[])
 	update_board (main_board);
 	inactivate_board (main_board);
 
+	/* search_win */
+	WINDOW* box_search_wnd = newwin (3, 35, 26, 3);
+	box (box_search_wnd, ACS_VLINE, ACS_HLINE);
+	wrefresh (box_search_wnd);
+	WINDOW* search_wnd = subwin (box_search_wnd, 1, 15, 27, 13);
+	wrefresh (search_wnd);
+	mvwprintw (box_search_wnd, 1, 1, "Search : ");
+	wrefresh (box_search_wnd);
+
 	/* main loop */
 	int ch;
+	int x;
+	int y;
+	char buffer [20];
+	memset (buffer, 0x0, sizeof (buffer));
+	char* temp_buf = buffer;
+	int length;
 	while ((ch = getch ()) != KEY_F(1)) {
 		switch (ch) {
 			/* form window loop */
 			case 'b' :
 				board_eventhandler (main_board, world);
 				break;
+			case 's' :
+				wprintw (search_wnd, "");
+				wrefresh (search_wnd);
+				curs_set (1);
+				nodelay (stdscr, false);
+
+				while ((ch = getch ()) != '\n') {
+					wmove (search_wnd, y, x);	
+					switch (ch) {
+						case KEY_BACKSPACE :
+							length = strlen (buffer);
+							*(temp_buf + length - 1) = '\0';
+							werase (search_wnd);
+							wrefresh (search_wnd);
+							wprintw (search_wnd, buffer);
+							wrefresh (search_wnd);							
+							break;
+						default :
+							length = strlen (buffer);
+							if (length < 20) {
+								strncpy (temp_buf + length, (char*) &ch, 1);
+								werase (search_wnd);
+								wrefresh (search_wnd);
+								wprintw (search_wnd, buffer);
+								wrefresh (search_wnd);
+							}
+							break;
+					}
+				}
+				curs_set (0);
+				nodelay (stdscr, true);
 			default :
 				break;
 		}
