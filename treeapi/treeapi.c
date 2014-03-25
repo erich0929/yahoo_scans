@@ -62,10 +62,12 @@ static gboolean store_into_g_ptr_array (GNode* node, gpointer g_ptr_array) {
 
 static gboolean check_and_store (GNode* node, gpointer data) {
 	STOCKINFO* temp = (STOCKINFO*) node -> data;
-	regex_t_and_array* temp1 = (regex_t_and_array*) data;
-	int status = regexec (&(temp1 -> state), temp -> symbol, 0, NULL, 0);
+	/* regex_t_and_array* temp1 = (regex_t_and_array*) data; */
+	regex_t_and_array* temp_data = (regex_t_and_array*) data;
+
+	int status = regexec (&(temp_data -> state), temp -> symbol, 0, NULL, 0);
 	if (status == 0 || g_node_depth (node) <= 2) {
-		g_ptr_array_add (temp1 -> array, temp);
+		g_ptr_array_add (temp_data -> array, temp);
 	}	
 	return false;
 }
@@ -117,9 +119,13 @@ GPtrArray*  search_by_regex (GNode* node, char* pattern, GPtrArray* empty_GPtrAr
 	empty_GPtrArray = g_ptr_array_new ();
 	GPtrArray* fulled_GPtrArray = empty_GPtrArray;
 	regex_t_and_array data;
-	regcomp (&(data.state), pattern, REG_EXTENDED);
+	regex_t* state = &(data.state);
+	int res = regcomp (state, pattern, REG_EXTENDED);
+	char str [100];
+	regerror (res, state, str, sizeof (str));
+
 	data.array = fulled_GPtrArray;
 	g_node_traverse (node, G_PRE_ORDER, G_TRAVERSE_ALL, -1, check_and_store, (gpointer) &data);
+	regfree (&data.state);
 	return fulled_GPtrArray;
 }
-

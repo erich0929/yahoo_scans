@@ -49,9 +49,11 @@ typedef struct _BOARD_WIDGET {
 
 	bool wndFlag;
 	bool dataFlag;	
+
+	void* userdata;
 } BOARD_WIDGET;
 
-BOARD_WIDGET* new_board (BOARD_WIDGET* board, int row, int col, int row_width, int col_width, POINT_INFO* point_info, GPtrArray* dataTable, PRINT_HEADER_FUNC printHeader, PRINT_DATA_FUNC printData);
+BOARD_WIDGET* new_board (BOARD_WIDGET* board, int row, int col, int row_width, int col_width, POINT_INFO* point_info, GPtrArray* dataTable, PRINT_HEADER_FUNC printHeader, PRINT_DATA_FUNC printData, void* userdata);
 
 void set_base_color (BOARD_WIDGET* board, chtype color);
 void set_selected_color (BOARD_WIDGET* board, chtype color);

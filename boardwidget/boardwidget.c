@@ -71,7 +71,7 @@ void init_scr()
 BOARD_WIDGET* new_board (BOARD_WIDGET* board, int row, int col,
 		int row_width, int col_width, POINT_INFO* point_info,
 	   	GPtrArray* dataTable, PRINT_HEADER_FUNC printHeader,
-	   	PRINT_DATA_FUNC printData) {
+	   	PRINT_DATA_FUNC printData, void* userdata) {
 
 	int i, j;
 	int maxX, maxY;
@@ -90,7 +90,8 @@ BOARD_WIDGET* new_board (BOARD_WIDGET* board, int row, int col,
 	board -> base_color = point_info -> base_color;  
 	board -> selected_color = point_info -> selected_color;
 	board -> selected_index = 0;
-	
+
+	board -> userdata = userdata;	
 	/* ------ <NOTICE THAT IT'S FIRST TIME TO CREATE WIDGET> ------- */
 	if (point_info -> x_from_origin == 0 && point_info -> y_from_origin == 0) {
 
@@ -474,11 +475,11 @@ void resize_handler (BOARD_WIDGET* board) {
 
 	origin_point_info.x_from_origin = board -> origin_point_info -> x_from_origin;
 	origin_point_info.y_from_origin = board -> origin_point_info -> y_from_origin;
-
+	void* userdata = board -> userdata;
 	del_board (board); /* delete board */
 
 	board = new_board (board, row, col, row_width, col_width, &origin_point_info
-						,dataTable, printHeader, printData); 
+						,dataTable, printHeader, printData, userdata); 
 
 	guint length = board -> wndTable -> len;
 
@@ -585,9 +586,10 @@ void set_colors (BOARD_WIDGET* board, chtype base_color, chtype selected_color) 
 	origin_point_info.x_from_origin = board -> origin_point_info -> x_from_origin;
 	origin_point_info.y_from_origin = board -> origin_point_info -> y_from_origin;
 
+	void* userdata = board -> userdata;
 	del_board (board); /* delete board */
 	board = new_board (board, row, col, row_width, col_width, &origin_point_info
-						,dataTable, printHeader, printData); 
+						,dataTable, printHeader, printData, userdata); 
 
 	guint length = board -> wndTable -> len;
 
@@ -660,34 +662,36 @@ void board_eventhandler (BOARD_WIDGET* board, GNode* root) {
 				break;
 			
 			case '\n' :
-				selected_data_index = board -> firstrow_index +
-											board -> selected_index;
-				temp = (STOCKINFO*) g_ptr_array_index (
-								board -> dataTable, selected_data_index);
-				if (temp -> depth <= 2) {
-					market = g_node_find (root, G_LEVEL_ORDER, 
-							G_TRAVERSE_NON_LEAVES, (gpointer) temp);
-					temp_node = g_node_first_child (market);
-					flag = ((STOCKINFO*) (temp_node -> data)) -> IsActivated;
-					
-					open_close_branch (market, !flag);
-					
-					clear_board (board);
+				if ((*(int*) (board -> userdata) & 0x000f) == 1) {
+					selected_data_index = board -> firstrow_index +
+						board -> selected_index;
+					temp = (STOCKINFO*) g_ptr_array_index (
+							board -> dataTable, selected_data_index);
+					if (temp -> depth <= 2) {
+						market = g_node_find (root, G_LEVEL_ORDER, 
+								G_TRAVERSE_NON_LEAVES, (gpointer) temp);
+						temp_node = g_node_first_child (market);
+						flag = ((STOCKINFO*) (temp_node -> data)) -> IsActivated;
 
-					g_ptr_array_free (board -> dataTable, false);
-					board -> dataTable = node_to_array (root, 
-										board -> dataTable);
-					
-					remember_index = board -> selected_index;
-					set_rowIndex (board, 0);
-					/*set_rowIndex (board, -1);*/
-					set_rowIndex (board, remember_index);
-					board -> wndFlag = true;
-					board -> dataFlag = true;
-					update_board (board);
+						open_close_branch (market, !flag);
+
+						clear_board (board);
+
+						g_ptr_array_unref (board -> dataTable);
+						board -> dataTable = node_to_array (root, 
+								board -> dataTable);
+
+						remember_index = board -> selected_index;
+						set_rowIndex (board, 0);
+						/*set_rowIndex (board, -1);*/
+						set_rowIndex (board, remember_index);
+						board -> wndFlag = true;
+						board -> dataFlag = true;
+						update_board (board);
+					}
+					break;
 				}
 				break;
-
 			case 'o' :
 				option_handler (board);
 				break;
